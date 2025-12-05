@@ -17,6 +17,7 @@ function getConfig() {
 // DOM Elements
 const elements = {
     transactionList: document.getElementById('transactions-list'),
+    totalBalance: document.getElementById('total-balance'),
     totalIncome: document.getElementById('total-income'),
     totalExpense: document.getElementById('total-expense'),
     addBtn: document.getElementById('add-transaction-btn'),
