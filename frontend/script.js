@@ -8,12 +8,9 @@ const state = {
 
 // Config Loading
 function getConfig() {
-    const savedUrl = localStorage.getItem('api_base_url');
-    const savedKey = localStorage.getItem('api_key');
-
     return {
-        BASE_URL: savedUrl || CONFIG.API_BASE_URL,
-        API_KEY: savedKey || CONFIG.API_KEY
+        BASE_URL: CONFIG.API_BASE_URL,
+        API_KEY: CONFIG.API_KEY
     };
 }
 
@@ -23,15 +20,10 @@ const elements = {
     totalIncome: document.getElementById('total-income'),
     totalExpense: document.getElementById('total-expense'),
     addBtn: document.getElementById('add-transaction-btn'),
-    configBtn: document.getElementById('config-btn'),
+
     modal: document.getElementById('transaction-modal'),
-    configModal: document.getElementById('config-modal'),
     closeModal: document.getElementById('close-modal'),
-    closeConfig: document.getElementById('close-config'),
     form: document.getElementById('transaction-form'),
-    configForm: document.getElementById('config-form'),
-    apiUrlInput: document.getElementById('api-url'),
-    apiKeyInput: document.getElementById('api-key'),
     // Views
     viewDashboard: document.getElementById('view-dashboard'),
     viewTransactions: document.getElementById('view-transactions'),
@@ -230,19 +222,12 @@ function openModalForEdit(id) {
 
 function closeModal() { elements.modal.classList.remove('active'); }
 
-function openConfigModal() {
-    const { BASE_URL, API_KEY } = getConfig();
-    elements.apiUrlInput.value = BASE_URL;
-    elements.apiKeyInput.value = API_KEY;
-    elements.configModal.classList.add('active');
-}
-function closeConfigModal() { elements.configModal.classList.remove('active'); }
+
 
 // Event Listeners
 elements.addBtn.addEventListener('click', openModal);
 elements.closeModal.addEventListener('click', closeModal);
-elements.configBtn.addEventListener('click', openConfigModal);
-elements.closeConfig.addEventListener('click', closeConfigModal);
+
 
 // Nav Listeners
 elements.navDashboard.addEventListener('click', (e) => {
@@ -285,17 +270,7 @@ elements.form.addEventListener('submit', (e) => {
     saveTransaction(transaction, id ? parseInt(id) : null);
 });
 
-elements.configForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const url = elements.apiUrlInput.value;
-    const key = elements.apiKeyInput.value;
 
-    localStorage.setItem('api_base_url', url);
-    localStorage.setItem('api_key', key);
-
-    closeConfigModal();
-    fetchTransactions();
-});
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
