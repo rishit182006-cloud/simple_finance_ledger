@@ -24,11 +24,11 @@
                 <h1>Ledger</h1>
             </div>
             <ul class="nav-links">
-                <li class="active"><a href="#"><span class="material-icons-round">dashboard</span> Dashboard</a></li>
-                <li><a href="#"><span class="material-icons-round">receipt_long</span> Transactions</a></li>
-                <li><a href="#"><span class="material-icons-round">pie_chart</span> Analytics</a></li>
+                <li class="active" id="nav-dashboard"><a href="#"><span class="material-icons-round">dashboard</span>
+                        Dashboard</a></li>
+                <li id="nav-transactions"><a href="#"><span class="material-icons-round">receipt_long</span>
+                        Transactions</a></li>
                 <li class="spacer"></li>
-                <li><a href="#" id="settings-btn"><span class="material-icons-round">settings</span> Settings</a></li>
             </ul>
         </nav>
 
@@ -36,7 +36,7 @@
         <main class="main-content">
             <!-- Header -->
             <header>
-                <h2>Dashboard</h2>
+                <h2 id="page-title">Dashboard</h2>
                 <div class="user-profile">
                     <button class="btn-primary" id="add-transaction-btn">
                         <span class="material-icons-round">add</span> New Transaction
@@ -48,58 +48,60 @@
                 </div>
             </header>
 
-            <!-- Summary Cards -->
-            <section class="summary-cards">
-                <div class="card balance-card">
-                    <div class="card-icon"><span class="material-icons-round">account_balance</span></div>
-                    <div class="card-info">
-                        <h3>Total Balance</h3>
-                        <p class="amount" id="total-balance">$0.00</p>
+            <!-- Dashboard View -->
+            <div id="view-dashboard">
+                <section class="summary-cards">
+                    <div class="card balance-card">
+                        <div class="card-icon"><span class="material-icons-round">account_balance</span></div>
+                        <div class="card-info">
+                            <h3>Total Balance</h3>
+                            <p class="amount" id="total-balance">$0.00</p>
+                        </div>
                     </div>
-                </div>
-                <div class="card income-card">
-                    <div class="card-icon"><span class="material-icons-round">arrow_upward</span></div>
-                    <div class="card-info">
-                        <h3>Total Income</h3>
-                        <p class="amount" id="total-income">$0.00</p>
+                    <div class="card income-card">
+                        <div class="card-icon"><span class="material-icons-round">arrow_upward</span></div>
+                        <div class="card-info">
+                            <h3>Total Income</h3>
+                            <p class="amount" id="total-income">$0.00</p>
+                        </div>
                     </div>
-                </div>
-                <div class="card expense-card">
-                    <div class="card-icon"><span class="material-icons-round">arrow_downward</span></div>
-                    <div class="card-info">
-                        <h3>Total Expenses</h3>
-                        <p class="amount" id="total-expense">$0.00</p>
+                    <div class="card expense-card">
+                        <div class="card-icon"><span class="material-icons-round">arrow_downward</span></div>
+                        <div class="card-info">
+                            <h3>Total Expenses</h3>
+                            <p class="amount" id="total-expense">$0.00</p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
 
-            <!-- Recent Transactions -->
-            <section class="transactions-section">
-                <div class="section-header">
-                    <h3>Recent Transactions</h3>
-                    <button class="btn-text">View All</button>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Date</th>
-                                <th>Category</th>
-                                <th>Amount</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactions-list">
-                            <!-- Transactions will be injected here -->
-                            <!-- Loading State -->
-                            <tr class="loading-row">
-                                <td colspan="5">Loading transactions...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            <!-- Transactions View -->
+            <div id="view-transactions" style="display: none;">
+                <section class="transactions-section">
+                    <div class="section-header">
+                        <h3>All Transactions</h3>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-list">
+                                <!-- Transactions will be injected here -->
+                                <tr class="loading-row">
+                                    <td colspan="5">Loading transactions...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
 
@@ -107,11 +109,12 @@
     <div class="modal-overlay" id="transaction-modal">
         <div class="modal">
             <div class="modal-header">
-                <h3>Add Transaction</h3>
+                <h3 id="modal-title">Add Transaction</h3>
                 <button class="close-btn" id="close-modal"><span class="material-icons-round">close</span></button>
             </div>
             <div class="modal-body">
                 <form id="transaction-form">
+                    <input type="hidden" id="txn-id"> <!-- Hidden ID for Editing -->
                     <div class="form-group">
                         <label for="txn-name">Name</label>
                         <input type="text" id="txn-name" required placeholder="e.g. Grocery Shopping">

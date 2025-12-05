@@ -20,7 +20,6 @@ function getConfig() {
 // DOM Elements
 const elements = {
     transactionList: document.getElementById('transactions-list'),
-    totalBalance: document.getElementById('total-balance'),
     totalIncome: document.getElementById('total-income'),
     totalExpense: document.getElementById('total-expense'),
     addBtn: document.getElementById('add-transaction-btn'),
@@ -32,7 +31,16 @@ const elements = {
     form: document.getElementById('transaction-form'),
     configForm: document.getElementById('config-form'),
     apiUrlInput: document.getElementById('api-url'),
-    apiKeyInput: document.getElementById('api-key')
+    apiKeyInput: document.getElementById('api-key'),
+    // Views
+    viewDashboard: document.getElementById('view-dashboard'),
+    viewTransactions: document.getElementById('view-transactions'),
+    navDashboard: document.getElementById('nav-dashboard'),
+    navTransactions: document.getElementById('nav-transactions'),
+    pageTitle: document.getElementById('page-title'),
+    // Modal
+    modalTitle: document.getElementById('modal-title'),
+    txnIdInput: document.getElementById('txn-id')
 };
 
 // Utils
@@ -51,6 +59,23 @@ function getHeaders() {
     };
 }
 
+// Navigation / Views
+function switchView(viewName) {
+    if (viewName === 'dashboard') {
+        elements.viewDashboard.style.display = 'block';
+        elements.viewTransactions.style.display = 'none';
+        elements.navDashboard.classList.add('active');
+        elements.navTransactions.classList.remove('active');
+        elements.pageTitle.textContent = 'Dashboard';
+    } else {
+        elements.viewDashboard.style.display = 'none';
+        elements.viewTransactions.style.display = 'block';
+        elements.navDashboard.classList.remove('active');
+        elements.navTransactions.classList.add('active');
+        elements.pageTitle.textContent = 'Transactions';
+    }
+}
+
 // API Calls
 async function fetchTransactions() {
     const { BASE_URL } = getConfig();
@@ -61,26 +86,30 @@ async function fetchTransactions() {
 
         if (!response.ok) {
             if (response.status === 403) {
-                alert("Authentication Failed: Check your API Key in Settings");
-                openConfigModal();
+                alert("Authentication Failed: Check logic or config");
             }
             throw new Error('Network response was not ok');
         }
 
         const data = await response.json();
-        state.transactions = data.reverse(); // Show newest first
+        // Backend returns oldest first usually, ensuring we reverse for newest first UI
+        // Actually, let's sort by date if we want, but reverse is fine for simple ledger
+        state.transactions = data.reverse();
         updateUI();
     } catch (error) {
         console.error("Error fetching transactions:", error);
-        elements.transactionList.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--danger-color);">Failed to load transactions. Check API Connection.</td></tr>`;
+        elements.transactionList.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--danger-color);">Failed to load.</td></tr>`;
     }
 }
 
-async function addTransaction(transaction) {
+async function saveTransaction(transaction, id = null) {
     const { BASE_URL } = getConfig();
+    const url = id ? `${BASE_URL}/entries/${id}` : `${BASE_URL}/add`;
+    const method = id ? 'PUT' : 'POST';
+
     try {
-        const response = await fetch(`${BASE_URL}/add`, {
-            method: 'POST',
+        const response = await fetch(url, {
+            method: method,
             headers: getHeaders(),
             body: JSON.stringify(transaction)
         });
@@ -88,13 +117,12 @@ async function addTransaction(transaction) {
         if (response.ok) {
             closeModal();
             fetchTransactions(); // Refresh
-            elements.form.reset();
         } else {
             const err = await response.json();
-            alert(`Error: ${err.detail || 'Failed to add'}`);
+            alert(`Error: ${err.detail || 'Failed to save'}`);
         }
     } catch (error) {
-        console.error("Error adding transaction:", error);
+        console.error("Error saving transaction:", error);
     }
 }
 
@@ -144,33 +172,62 @@ function updateUI() {
     state.balance = income - expense;
 
     // Update Cards
-    elements.totalBalance.textContent = formatCurrency(state.balance);
-    elements.totalIncome.textContent = formatCurrency(income);
-    elements.totalExpense.textContent = formatCurrency(expense);
+    if (elements.totalBalance) elements.totalBalance.textContent = formatCurrency(state.balance);
+    if (elements.totalIncome) elements.totalIncome.textContent = formatCurrency(income);
+    if (elements.totalExpense) elements.totalExpense.textContent = formatCurrency(expense);
 
     // Update Table
-    elements.transactionList.innerHTML = state.transactions.map(txn => `
-        <tr>
-            <td>
-                <div style="font-weight: 500;">${txn.name}</div>
-                <div style="font-size: 0.75rem; color: var(--text-muted);">${txn.description}</div>
-            </td>
-            <td>${txn.date}</td>
-            <td><span style="background:var(--bg-color); padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight:500;">${txn.category}</span></td>
-            <td class="${txn.amount >= 0 ? 'amount-positive' : 'amount-negative'}">
-                ${txn.amount >= 0 ? '+' : '-'}${formatCurrency(Math.abs(txn.amount))}
-            </td>
-            <td>
-                <button class="action-btn delete" onclick="deleteTransaction(${txn.id})">
-                    <span class="material-icons-round">delete</span>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    if (elements.transactionList) {
+        elements.transactionList.innerHTML = state.transactions.map(txn => `
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">${txn.name}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">${txn.description}</div>
+                </td>
+                <td>${txn.date}</td>
+                <td><span style="background:var(--bg-color); padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight:500;">${txn.category}</span></td>
+                <td class="${txn.amount >= 0 ? 'amount-positive' : 'amount-negative'}">
+                    ${txn.amount >= 0 ? '+' : '-'}${formatCurrency(Math.abs(txn.amount))}
+                </td>
+                <td>
+                    <button class="action-btn" onclick="openModalForEdit(${txn.id})">
+                        <span class="material-icons-round">edit</span>
+                    </button>
+                    <button class="action-btn delete" onclick="deleteTransaction(${txn.id})">
+                        <span class="material-icons-round">delete</span>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
 }
 
 // Modal Handlers
-function openModal() { elements.modal.classList.add('active'); }
+function openModal() {
+    elements.form.reset();
+    elements.txnIdInput.value = ''; // Clear ID
+    elements.modalTitle.textContent = "Add Transaction";
+    document.getElementById('txn-date').valueAsDate = new Date(); // Default today
+    elements.modal.classList.add('active');
+}
+
+function openModalForEdit(id) {
+    const txn = state.transactions.find(t => t.id === id);
+    if (!txn) return;
+
+    elements.txnIdInput.value = txn.id;
+    elements.modalTitle.textContent = "Edit Transaction";
+
+    document.getElementById('txn-name').value = txn.name;
+    document.getElementById('txn-description').value = txn.description;
+    document.getElementById('txn-amount').value = Math.abs(txn.amount);
+    document.getElementById('txn-date').value = txn.date;
+    document.getElementById('txn-category').value = txn.category;
+    document.getElementById('txn-type').value = txn.amount >= 0 ? 'income' : 'expense';
+
+    elements.modal.classList.add('active');
+}
+
 function closeModal() { elements.modal.classList.remove('active'); }
 
 function openConfigModal() {
@@ -187,6 +244,16 @@ elements.closeModal.addEventListener('click', closeModal);
 elements.configBtn.addEventListener('click', openConfigModal);
 elements.closeConfig.addEventListener('click', closeConfigModal);
 
+// Nav Listeners
+elements.navDashboard.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchView('dashboard');
+});
+elements.navTransactions.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchView('transactions');
+});
+
 // Close on outside click
 elements.modal.addEventListener('click', (e) => {
     if (e.target === elements.modal) closeModal();
@@ -196,10 +263,11 @@ elements.modal.addEventListener('click', (e) => {
 elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    const id = elements.txnIdInput.value;
     const type = document.getElementById('txn-type').value;
     let amount = parseFloat(document.getElementById('txn-amount').value);
 
-    // Adjust sign based on type
+    // Adjust sign
     if (type === 'expense') {
         amount = -Math.abs(amount);
     } else {
@@ -214,7 +282,7 @@ elements.form.addEventListener('submit', (e) => {
         category: document.getElementById('txn-category').value
     };
 
-    addTransaction(transaction);
+    saveTransaction(transaction, id ? parseInt(id) : null);
 });
 
 elements.configForm.addEventListener('submit', (e) => {
@@ -226,12 +294,13 @@ elements.configForm.addEventListener('submit', (e) => {
     localStorage.setItem('api_key', key);
 
     closeConfigModal();
-    fetchTransactions(); // Reload with new config
+    fetchTransactions();
 });
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Set today's date in form
-    document.getElementById('txn-date').valueAsDate = new Date();
     fetchTransactions();
+    switchView('dashboard'); // Default view
 });
+window.openModalForEdit = openModalForEdit;
+window.deleteTransaction = deleteTransaction;
